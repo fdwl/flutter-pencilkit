@@ -31,6 +31,7 @@
 - [x] UI properties(background color, scrollability, isOpaque, etc...)
 - [x] Import/Export drawing data
 - [x] Get drawing png/jpeg image data as base64
+- [x] **Get detailed stroke data with paths, colors, and properties**
 - [x] Manage drawing tools programmatically
 
 ### Requirements ✅
@@ -60,7 +61,36 @@ Methods available for `PencilKitController`.
 | loadBase64Data(String base64Data): Future<void>                                    | Load base64 drawing data into canvas                                                    | O      |                                                                              |
 | getBase64PngData(): Future<String>                                                 | Get current drawing data as png base64 string form                                      | O      | scale = 0 means use default UIScreen.main.scale                              |
 | getBase64JpegData(): Future<String>                                                | Get current drawing data as jpeg base64 string form                                     | O      | scale = 0 means use default UIScreen.main.scale. default compression is 0.93 |
+| **getStrokes(): Future<List<Map<String, dynamic>>>**                              | **Get current drawing strokes data as structured format**                               | **O**  | **New! Returns detailed stroke information including paths, colors, and properties** |
 | setPKTool({required ToolType toolType, double? width, Color? color}): Future<void> | Set `PKTool` type with width and color                                                  | X      |                                                                              |
+
+## New Feature: Strokes Data Export 🎨
+
+The `getStrokes()` method allows you to export detailed stroke information instead of just base64 image data. This is useful for:
+
+- Analyzing drawing patterns and behavior
+- Reconstructing drawings programmatically  
+- Building custom drawing analytics
+- Creating drawing tutorials or replays
+
+### Usage Example
+
+```dart
+try {
+  final strokes = await controller.getStrokes();
+  print('Total strokes: ${strokes.length}');
+  
+  for (final stroke in strokes) {
+    print('Ink type: ${stroke['inkType']}');
+    print('Color: ${stroke['color']}');
+    print('Points: ${stroke['pathPoints'].length}');
+  }
+} catch (e) {
+  print('Error: $e');
+}
+```
+
+For detailed documentation, see [STROKES_API.md](STROKES_API.md).
 
 ## Caution for `setPKTool`
 

@@ -9,6 +9,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pencil_kit/pencil_kit.dart';
 
+import 'strokes_viewer.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -176,6 +178,73 @@ class _MyAppState extends State<MyApp> {
                           });
                         },
                         tooltip: "Get base64 jpeg data",
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.data_array),
+                        onPressed: () async {
+                          try {
+                            final strokes = await controller.getStrokes();
+                            print('Total strokes: ${strokes.length}');
+                            for (int i = 0; i < strokes.length; i++) {
+                              final stroke = strokes[i];
+                              print('Stroke $i:');
+                              print('  Ink type: ${stroke['inkType']}');
+                              print('  Color: ${stroke['color']}');
+                              print('  Points count: ${stroke['pathPoints']?.length ?? 0}');
+                              if (stroke['transform'] != null) {
+                                final transform = stroke['transform'] as Map;
+                                print('  Transform: [${transform['a']}, ${transform['b']}, ${transform['c']}, ${transform['d']}, ${transform['tx']}, ${transform['ty']}]');
+                              }
+                            }
+                            Fluttertoast.showToast(
+                                msg: "Got ${strokes.length} strokes data (check console)",
+                                toastLength: Toast.LENGTH_LONG,
+                                gravity: ToastGravity.CENTER,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.blueAccent,
+                                textColor: Colors.white,
+                                fontSize: 12.0);
+                          } catch (e) {
+                            print('Error getting strokes: $e');
+                            Fluttertoast.showToast(
+                                msg: "Failed to get strokes data",
+                                toastLength: Toast.LENGTH_LONG,
+                                gravity: ToastGravity.CENTER,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.redAccent,
+                                textColor: Colors.white,
+                                fontSize: 12.0);
+                          }
+                        },
+                        tooltip: "Get strokes data",
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.list_alt),
+                        onPressed: () async {
+                          try {
+                            final strokes = await controller.getStrokes();
+                            if (!mounted) return;
+                            
+                            if (context.mounted) {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => StrokesViewer(strokes: strokes),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            print('Error getting strokes: $e');
+                            Fluttertoast.showToast(
+                                msg: "Failed to get strokes data",
+                                toastLength: Toast.LENGTH_LONG,
+                                gravity: ToastGravity.CENTER,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.redAccent,
+                                textColor: Colors.white,
+                                fontSize: 12.0);
+                          }
+                        },
+                        tooltip: "View strokes details",
                       ),
                     ],
                   ),

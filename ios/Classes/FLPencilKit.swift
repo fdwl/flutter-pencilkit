@@ -90,6 +90,8 @@ class FLPencilKit: NSObject, FlutterPlatformView {
         getBase64JpegData(pencilKitView: pencilKitView, call: call, result: result)
       case "loadBase64Data":
         loadBase64Data(pencilKitView: pencilKitView, call: call, result: result)
+      case "getStrokes":
+        getStrokes(pencilKitView: pencilKitView, call: call, result: result)
       case "applyProperties":
         pencilKitView.applyProperties(properties: call.arguments as! [String: Any?])
         result(nil)
@@ -173,6 +175,16 @@ class FLPencilKit: NSObject, FlutterPlatformView {
     } catch {
       result(FlutterError(code: "NATIVE_ERROR", message: error.localizedDescription, details: nil))
     }
+  }
+
+  @available(iOS 13, *)
+  private func getStrokes(
+    pencilKitView: PencilKitView,
+    call: FlutterMethodCall,
+    result: FlutterResult
+  ) {
+    let strokes = pencilKitView.getStrokes()
+    result(strokes)
   }
 
   private func parseArguments(_ arguments: Any?) -> (URL, Bool) {
@@ -385,6 +397,109 @@ private class PencilKitView: UIView {
     synchronizeCanvasViewProperties(old: canvasView, new: newCanvasView)
     canvasView = newCanvasView
     layoutCanvasView()
+  }
+
+  func getStrokes() -> [[String: Any]] {
+    let drawing = canvasView.drawing
+    var strokesArray: [[String: Any]] = []
+    
+    for stroke in drawing.strokes {
+      var strokeDict: [String: Any] = [:]
+      
+      // 获取笔画的基本信息
+      strokeDict["inkType"] = stroke.ink.inkType.rawValue
+      strokeDict["color"] = colorToHex(stroke.ink.color)
+      
+      // 获取路径点
+      var pathPoints: [[String: Any]] = []
+      for point in stroke.path {
+        let pointDict: [String: Any] = [
+          "location": ["x": point.location.x, "y": point.location.y],
+          "timeOffset": point.timeOffset,
+          "size": ["width": point.size.width, "height": point.size.height],
+          "opacity": point.opacity,
+          "force": point.force,
+          "azimuth": point.azimuth,
+          "altitude": point.altitude
+        ]
+        pathPoints.append(pointDict)
+      }
+      strokeDict["pathPoints"] = pathPoints
+      
+      // 获取变换矩阵
+      let transform = stroke.transform
+      strokeDict["transform"] = [
+        "a": transform.a,
+        "b": transform.b,
+        "c": transform.c,
+        "d": transform.d,
+        "tx": transform.tx,
+        "ty": transform.ty
+      ]
+      
+      // 获取遮罩路径（如果存在）
+      if let mask = stroke.mask {
+        strokeDict["mask"] = pathToArray(mask)
+      }
+      
+      strokesArray.append(strokeDict)
+    }
+    
+    return strokesArray
+  }
+  
+  private func colorToHex(_ color: UIColor) -> String {
+    var red: CGFloat = 0
+    var green: CGFloat = 0
+    var blue: CGFloat = 0
+    var alpha: CGFloat = 0
+    
+    color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+    
+    let r = Int(red * 255)
+    let g = Int(green * 255)
+    let b = Int(blue * 255)
+    let a = Int(alpha * 255)
+    
+    return String(format: "#%02X%02X%02X%02X", a, r, g, b)
+  }
+  
+  private func pathToArray(_ path: UIBezierPath) -> [[String: Any]] {
+    var pathArray: [[String: Any]] = []
+    
+    path.cgPath.applyWithBlock { element in
+      switch element.pointee.type {
+      case .moveToPoint:
+        pathArray.append([
+          "type": "moveTo",
+          "point": ["x": element.pointee.points[0].x, "y": element.pointee.points[0].y]
+        ])
+      case .addLineToPoint:
+        pathArray.append([
+          "type": "lineTo",
+          "point": ["x": element.pointee.points[0].x, "y": element.pointee.points[0].y]
+        ])
+      case .addQuadCurveToPoint:
+        pathArray.append([
+          "type": "quadCurveTo",
+          "controlPoint": ["x": element.pointee.points[0].x, "y": element.pointee.points[0].y],
+          "point": ["x": element.pointee.points[1].x, "y": element.pointee.points[1].y]
+        ])
+      case .addCurveToPoint:
+        pathArray.append([
+          "type": "curveTo",
+          "controlPoint1": ["x": element.pointee.points[0].x, "y": element.pointee.points[0].y],
+          "controlPoint2": ["x": element.pointee.points[1].x, "y": element.pointee.points[1].y],
+          "point": ["x": element.pointee.points[2].x, "y": element.pointee.points[2].y]
+        ])
+      case .closeSubpath:
+        pathArray.append(["type": "close"])
+      @unknown default:
+        break
+      }
+    }
+    
+    return pathArray
   }
 
   func applyProperties(properties: [String: Any?]) {

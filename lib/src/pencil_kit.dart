@@ -387,6 +387,35 @@ class PencilKitController {
   Future<void> loadBase64Data(String base64Data) =>
       _channel.invokeMethod('loadBase64Data', base64Data);
 
+  /// Get current drawing strokes data as structured format.
+  /// 
+  /// Returns a list of stroke objects, each containing:
+  /// - inkType: The type of ink used (pen, pencil, marker, etc.)
+  /// - color: The color in hex format (#AARRGGBB)
+  /// - pathPoints: Array of path points with location, pressure, etc.
+  /// - transform: Transformation matrix applied to the stroke
+  /// - mask: Optional mask path for the stroke
+  ///
+  /// Throws an [Error] if failed
+  /// 
+  /// Example
+  /// ```dart
+  /// try {
+  ///   final strokes = await controller.getStrokes();
+  ///   for (final stroke in strokes) {
+  ///     print('Ink type: ${stroke['inkType']}');
+  ///     print('Color: ${stroke['color']}');
+  ///     print('Points count: ${stroke['pathPoints'].length}');
+  ///   }
+  /// } catch (e) {
+  ///   // handle error
+  /// }
+  /// ```
+  Future<List<Map<String, dynamic>>> getStrokes() async {
+    final dynamic result = await _channel.invokeMethod('getStrokes');
+    return (result as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
   /// Set PKTool toolType, width, and color
   ///
   /// This method can fail if tool type is not supported by device iOS version
