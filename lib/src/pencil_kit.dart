@@ -429,8 +429,18 @@ class PencilKitController {
   /// }
   /// ```
   Future<List<Map<String, dynamic>>> getStrokes() async {
-    final dynamic result = await _channel.invokeMethod('getStrokes');
-    return (result as List<dynamic>).cast<Map<String, dynamic>>();
+    try {
+      final dynamic result = await _channel.invokeMethod('getStrokes');
+      final List<dynamic> resultList = result as List<dynamic>;
+      
+      // Convert each map to Map<String, dynamic>
+      return resultList.map<Map<String, dynamic>>((dynamic item) {
+        final Map<Object?, Object?> rawMap = item as Map<Object?, Object?>;
+        return Map<String, dynamic>.from(rawMap);
+      }).toList();
+    } catch (e) {
+      throw Exception('Error extracting drawing data: $e');
+    }
   }
 
   /// Set PKTool toolType, width, and color
