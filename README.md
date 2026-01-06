@@ -61,12 +61,16 @@ Methods available for `PencilKitController`.
 | loadBase64Data(String base64Data): Future<void>                                    | Load base64 drawing data into canvas                                                    | O      |                                                                              |
 | getBase64PngData(): Future<String>                                                 | Get current drawing data as png base64 string form                                      | O      | scale = 0 means use default UIScreen.main.scale                              |
 | getBase64JpegData(): Future<String>                                                | Get current drawing data as jpeg base64 string form                                     | O      | scale = 0 means use default UIScreen.main.scale. default compression is 0.93 |
-| **getStrokes(): Future<List<Map<String, dynamic>>>**                              | **Get current drawing strokes data as structured format**                               | **O**  | **New! Returns detailed stroke information including paths, colors, and properties** |
+| **getStrokes(): Future<List<Map<String, dynamic>>>**                              | **Get current drawing strokes data as structured format**                               | **O**  | **New! Requires iOS 14.0+. Returns detailed stroke information including paths, colors, and properties** |
 | setPKTool({required ToolType toolType, double? width, Color? color}): Future<void> | Set `PKTool` type with width and color                                                  | X      |                                                                              |
 
 ## New Feature: Strokes Data Export 🎨
 
-The `getStrokes()` method allows you to export detailed stroke information instead of just base64 image data. This is useful for:
+The `getStrokes()` method allows you to export detailed stroke information instead of just base64 image data. 
+
+**⚠️ Important**: This feature requires **iOS 14.0 or later**. On iOS 13.x devices, it returns an error object.
+
+This is useful for:
 
 - Analyzing drawing patterns and behavior
 - Reconstructing drawings programmatically  
@@ -78,8 +82,16 @@ The `getStrokes()` method allows you to export detailed stroke information inste
 ```dart
 try {
   final strokes = await controller.getStrokes();
-  print('Total strokes: ${strokes.length}');
   
+  // Check for iOS 13.x compatibility
+  if (strokes.length == 1 && strokes[0].containsKey('error')) {
+    print('Error: ${strokes[0]['error']}');
+    print('Suggestion: ${strokes[0]['suggestion']}');
+    return;
+  }
+  
+  // Process stroke data (iOS 14.0+)
+  print('Total strokes: ${strokes.length}');
   for (final stroke in strokes) {
     print('Ink type: ${stroke['inkType']}');
     print('Color: ${stroke['color']}');

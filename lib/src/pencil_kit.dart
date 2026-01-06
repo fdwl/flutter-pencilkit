@@ -389,6 +389,9 @@ class PencilKitController {
 
   /// Get current drawing strokes data as structured format.
   /// 
+  /// **Important**: This method requires iOS 14.0 or later. On iOS 13.x, 
+  /// it will return an error object instead of stroke data.
+  /// 
   /// Returns a list of stroke objects, each containing:
   /// - inkType: The type of ink used (pen, pencil, marker, etc.)
   /// - color: The color in hex format (#AARRGGBB)
@@ -396,12 +399,26 @@ class PencilKitController {
   /// - transform: Transformation matrix applied to the stroke
   /// - mask: Optional mask path for the stroke
   ///
+  /// On iOS 13.x, returns a single error object with:
+  /// - error: Error message explaining the limitation
+  /// - currentVersion: Current iOS version info
+  /// - suggestion: Alternative method to use
+  ///
   /// Throws an [Error] if failed
   /// 
   /// Example
   /// ```dart
   /// try {
   ///   final strokes = await controller.getStrokes();
+  ///   
+  ///   // Check if this is an error response (iOS 13.x)
+  ///   if (strokes.length == 1 && strokes[0].containsKey('error')) {
+  ///     print('Error: ${strokes[0]['error']}');
+  ///     print('Suggestion: ${strokes[0]['suggestion']}');
+  ///     return;
+  ///   }
+  ///   
+  ///   // Process normal stroke data (iOS 14.0+)
   ///   for (final stroke in strokes) {
   ///     print('Ink type: ${stroke['inkType']}');
   ///     print('Color: ${stroke['color']}');

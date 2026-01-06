@@ -403,7 +403,9 @@ private class PencilKitView: UIView {
     let drawing = canvasView.drawing
     var strokesArray: [[String: Any]] = []
     
-    for stroke in drawing.strokes {
+    // PKDrawing.strokes is only available in iOS 14.0+
+    if #available(iOS 14.0, *) {
+      for stroke in drawing.strokes {
       var strokeDict: [String: Any] = [:]
       
       // 获取笔画的基本信息
@@ -443,6 +445,15 @@ private class PencilKitView: UIView {
       }
       
       strokesArray.append(strokeDict)
+    }
+    } else {
+      // For iOS 13.x, we cannot access individual strokes
+      // Return empty array with a note
+      strokesArray.append([
+        "error": "Strokes data is only available on iOS 14.0 or later",
+        "currentVersion": "iOS 13.x",
+        "suggestion": "Use getBase64Data() method instead"
+      ])
     }
     
     return strokesArray

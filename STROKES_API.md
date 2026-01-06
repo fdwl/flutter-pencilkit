@@ -2,19 +2,30 @@
 
 这个文档描述了新添加的 `getStrokes()` 方法，它允许你直接获取绘图的笔画数据，而不仅仅是 base64 编码的图像数据。
 
+## ⚠️ 重要提示
+
+**此功能需要 iOS 14.0 或更高版本**。在 iOS 13.x 设备上，此方法会返回一个错误对象而不是笔画数据。
+
 ## 新增方法
 
 ### `getStrokes()`
 
 获取当前绘图的所有笔画数据，以结构化格式返回。
 
+**要求**: iOS 14.0 或更高版本
+
 ```dart
 Future<List<Map<String, dynamic>>> getStrokes()
 ```
 
+#### 版本兼容性
+
+- **iOS 14.0+**: 返回完整的笔画数据
+- **iOS 13.x**: 返回包含错误信息的单个对象
+
 #### 返回值
 
-返回一个包含笔画对象的列表，每个笔画对象包含以下字段：
+**在 iOS 14.0+ 上**，返回一个包含笔画对象的列表，每个笔画对象包含以下字段：
 
 - **`inkType`** (int): 墨水类型
   - `0`: Pen (钢笔)
@@ -41,9 +52,44 @@ Future<List<Map<String, dynamic>>> getStrokes()
 
 - **`mask`** (List, 可选): 遮罩路径数据（如果存在）
 
+**在 iOS 13.x 上**，返回包含错误信息的单个对象：
+
+- **`error`** (String): 错误消息
+- **`currentVersion`** (String): 当前 iOS 版本信息  
+- **`suggestion`** (String): 建议使用的替代方法
+
 ## 使用示例
 
-### 基本用法
+### 基本用法（带版本检查）
+
+```dart
+try {
+  final strokes = await controller.getStrokes();
+  
+  // 检查是否为错误响应（iOS 13.x）
+  if (strokes.length == 1 && strokes[0].containsKey('error')) {
+    print('错误: ${strokes[0]['error']}');
+    print('当前版本: ${strokes[0]['currentVersion']}');
+    print('建议: ${strokes[0]['suggestion']}');
+    return;
+  }
+  
+  // 处理正常的笔画数据（iOS 14.0+）
+  print('总共有 ${strokes.length} 个笔画');
+  
+  for (int i = 0; i < strokes.length; i++) {
+    final stroke = strokes[i];
+    print('笔画 $i:');
+    print('  墨水类型: ${stroke['inkType']}');
+    print('  颜色: ${stroke['color']}');
+    print('  点数: ${stroke['pathPoints']?.length ?? 0}');
+  }
+} catch (e) {
+  print('获取笔画数据失败: $e');
+}
+```
+
+### 旧版本基本用法（不推荐）
 
 ```dart
 try {
@@ -62,11 +108,17 @@ try {
 }
 ```
 
-### 分析笔画数据
+### 分析笔画数据（iOS 14.0+）
 
 ```dart
 Future<void> analyzeStrokes() async {
   final strokes = await controller.getStrokes();
+  
+  // 检查版本兼容性
+  if (strokes.length == 1 && strokes[0].containsKey('error')) {
+    print('此功能需要 iOS 14.0+');
+    return;
+  }
   
   // 统计不同类型的笔画
   Map<int, int> inkTypeCount = {};
@@ -143,10 +195,34 @@ void reconstructDrawing(List<Map<String, dynamic>> strokes) {
 
 ## 注意事项
 
-1. 这个方法只在 iOS 13.0+ 上可用
-2. 返回的数据量取决于绘图的复杂程度
-3. 对于复杂的绘图，数据可能会很大
-4. 坐标系统使用 PencilKit 的原生坐标系统
+1. **版本要求**: 此方法需要 iOS 14.0 或更高版本
+2. **iOS 13.x 兼容性**: 在 iOS 13.x 上会返回错误对象，建议使用 `getBase64Data()` 替代
+3. 返回的数据量取决于绘图的复杂程度
+4. 对于复杂的绘图，数据可能会很大
+5. 坐标系统使用 PencilKit 的原生坐标系统
+
+## 版本检查最佳实践
+
+```dart
+Future<bool> isStrokesDataAvailable() async {
+  try {
+    final strokes = await controller.getStrokes();
+    return !(strokes.length == 1 && strokes[0].containsKey('error'));
+  } catch (e) {
+    return false;
+  }
+}
+
+// 使用示例
+if (await isStrokesDataAvailable()) {
+  final strokes = await controller.getStrokes();
+  // 处理笔画数据
+} else {
+  // 使用替代方法
+  final base64Data = await controller.getBase64Data();
+  // 处理 base64 数据
+}
+```
 
 ## 错误处理
 

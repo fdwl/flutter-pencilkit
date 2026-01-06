@@ -184,6 +184,24 @@ class _MyAppState extends State<MyApp> {
                         onPressed: () async {
                           try {
                             final strokes = await controller.getStrokes();
+                            
+                            // Check if this is an error response (iOS 13.x)
+                            if (strokes.length == 1 && strokes[0].containsKey('error')) {
+                              print('Error: ${strokes[0]['error']}');
+                              print('Current Version: ${strokes[0]['currentVersion']}');
+                              print('Suggestion: ${strokes[0]['suggestion']}');
+                              
+                              Fluttertoast.showToast(
+                                  msg: "Strokes data requires iOS 14.0+",
+                                  toastLength: Toast.LENGTH_LONG,
+                                  gravity: ToastGravity.CENTER,
+                                  timeInSecForIosWeb: 1,
+                                  backgroundColor: Colors.orangeAccent,
+                                  textColor: Colors.white,
+                                  fontSize: 12.0);
+                              return;
+                            }
+                            
                             print('Total strokes: ${strokes.length}');
                             for (int i = 0; i < strokes.length; i++) {
                               final stroke = strokes[i];
@@ -224,6 +242,30 @@ class _MyAppState extends State<MyApp> {
                           try {
                             final strokes = await controller.getStrokes();
                             if (!mounted) return;
+                            
+                            // Check if this is an error response (iOS 13.x)
+                            if (strokes.length == 1 && strokes[0].containsKey('error')) {
+                              if (context.mounted) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Feature Not Available'),
+                                    content: Text(
+                                      '${strokes[0]['error']}\n\n'
+                                      'Current: ${strokes[0]['currentVersion']}\n'
+                                      'Suggestion: ${strokes[0]['suggestion']}'
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(),
+                                        child: const Text('OK'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                              return;
+                            }
                             
                             if (context.mounted) {
                               Navigator.of(context).push(

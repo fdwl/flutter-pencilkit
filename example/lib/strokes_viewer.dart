@@ -7,6 +7,53 @@ class StrokesViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if this is an error response (iOS 13.x)
+    if (strokes.length == 1 && strokes[0].containsKey('error')) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Strokes Data - Not Available'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.orange,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  strokes[0]['error'] ?? 'Unknown error',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Current: ${strokes[0]['currentVersion'] ?? 'Unknown'}',
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Suggestion: ${strokes[0]['suggestion'] ?? 'Use alternative methods'}',
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Go Back'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('Strokes Data (${strokes.length} strokes)'),
